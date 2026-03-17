@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İmtahan Sistemi</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+          --bg: #0a0a0f;
+          --surface: #12121a;
+          --border: #1e1e2e;
+          --accent: #6c63ff;
+          --accent2: #00d4aa;
+          --danger: #ff4757;
+          --text: #e8e8f0;
+          --text-muted: #6b6b80;
+          --mono: 'IBM Plex Mono', monospace;
+          --sans: 'IBM Plex Sans', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+          background: var(--bg);
+          color: var(--text);
+          font-family: var(--sans);
+          min-height: 100vh;
+          overflow-y: auto;
+          padding: 40px 16px 60px;
+        }
+
+        body::before {
+          content: '';
+          position: fixed;
+          inset: 0;
+          background-image:
+            linear-gradient(rgba(108,99,255,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(108,99,255,0.03) 1px, transparent 1px);
+          background-size: 40px 40px;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .container {
+          width: 100%;
+          max-width: 420px;
+          margin: 0 auto;
+          position: relative;
+          z-index: 1;
+        }
+
+        .logo {
+          text-align: center;
+          margin-bottom: 40px;
+        }
+
+        .logo-icon {
+          width: 56px;
+          height: 56px;
+          background: linear-gradient(135deg, var(--accent), var(--accent2));
+          border-radius: 16px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 16px;
+          font-size: 24px;
+        }
+
+        .logo h1 {
+          font-family: var(--mono);
+          font-size: 22px;
+          font-weight: 600;
+          letter-spacing: -0.5px;
+          color: var(--text);
+        }
+
+        .logo p {
+          font-size: 13px;
+          color: var(--text-muted);
+          margin-top: 4px;
+          font-family: var(--mono);
+        }
+
+        .tabs {
+          display: flex;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 4px;
+          margin-bottom: 24px;
+          gap: 4px;
+        }
+
+        .tab {
+          flex: 1;
+          padding: 10px;
+          text-align: center;
+          font-size: 13px;
+          font-weight: 500;
+          border-radius: 8px;
+          cursor: pointer;
+          color: var(--text-muted);
+          transition: all 0.2s;
+          font-family: var(--mono);
+          border: none;
+          background: none;
+        }
+
+        .tab.active {
+          background: var(--accent);
+          color: #fff;
+        }
+
+        .card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          padding: 28px;
+        }
+
+        .card h2 {
+          font-size: 16px;
+          font-weight: 600;
+          margin-bottom: 4px;
+          font-family: var(--mono);
+        }
+
+        .card .subtitle {
+          font-size: 12px;
+          color: var(--text-muted);
+          margin-bottom: 24px;
+          font-family: var(--mono);
+        }
+
+        .field {
+          margin-bottom: 16px;
+        }
+
+        .field label {
+          display: block;
+          font-size: 12px;
+          font-weight: 500;
+          color: var(--text-muted);
+          margin-bottom: 6px;
+          font-family: var(--mono);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .field input, .field select {
+          width: 100%;
+          padding: 12px 14px;
+          background: var(--bg);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          color: var(--text);
+          font-size: 14px;
+          font-family: var(--mono);
+          outline: none;
+          transition: border-color 0.2s;
+        }
+
+        .field input:focus, .field select:focus {
+          border-color: var(--accent);
+        }
+
+        .field input::placeholder {
+          color: var(--text-muted);
+        }
+
+        .field select option {
+          background: var(--surface);
+          color: var(--text);
+        }
+
+        .btn {
+          width: 100%;
+          padding: 13px;
+          border: none;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: var(--mono);
+          transition: all 0.2s;
+          margin-top: 8px;
+        }
+
+        .btn-primary {
+          background: var(--accent);
+          color: #fff;
+        }
+
+        .btn-primary:hover { background: #5a52e0; }
+
+        .btn-success {
+          background: var(--accent2);
+          color: #000;
+        }
+
+        .btn-success:hover { background: #00b894; }
+
+        .btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .alert {
+          padding: 10px 14px;
+          border-radius: 8px;
+          font-size: 13px;
+          margin-bottom: 16px;
+          font-family: var(--mono);
+          display: none;
+        }
+
+        .alert.error {
+          background: rgba(255,71,87,0.1);
+          border: 1px solid rgba(255,71,87,0.3);
+          color: #ff6b7a;
+          display: block;
+        }
+
+        .alert.success {
+          background: rgba(0,212,170,0.1);
+          border: 1px solid rgba(0,212,170,0.3);
+          color: var(--accent2);
+          display: block;
+        }
+
+        .spinner {
+          display: inline-block;
+          width: 14px;
+          height: 14px;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: spin 0.6s linear infinite;
+          margin-right: 8px;
+          vertical-align: middle;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .container { animation: fadeUp 0.4s ease; }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="logo">
+        <div class="logo-icon">📋</div>
+        <h1>İmtahan Sistemi</h1>
+        <p>exam_system v1.0</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('teacher')">Müəllim</button>
+        <button class="tab" onclick="switchTab('invigilator')">Nəzarətçi</button>
+        <button class="tab" onclick="switchTab('student')">Tələbə</button>
+    </div>
+
+    <!-- Müəllim -->
+    <div class="panel active" id="panel-teacher">
+        <div class="card">
+            <h2>Müəllim girişi</h2>
+            <p class="subtitle">// teacher panel</p>
+            <div id="alert-teacher" class="alert"></div>
+            <div class="field">
+                <label>İstifadəçi adı</label>
+                <input type="text" id="teacher-username" placeholder="teacher">
+            </div>
+            <div class="field">
+                <label>Şifrə</label>
+                <input type="password" id="teacher-password" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary" onclick="login('teacher')">Daxil ol →</button>
+        </div>
+    </div>
+
+    <!-- Nəzarətçi -->
+    <div class="panel" id="panel-invigilator">
+        <div class="card">
+            <h2>Nəzarətçi girişi</h2>
+            <p class="subtitle">// invigilator panel</p>
+            <div id="alert-invigilator" class="alert"></div>
+            <div class="field">
+                <label>İstifadəçi adı</label>
+                <input type="text" id="invig-username" placeholder="invig">
+            </div>
+            <div class="field">
+                <label>Şifrə</label>
+                <input type="password" id="invig-password" placeholder="••••••••">
+            </div>
+            <button class="btn btn-primary" onclick="login('invigilator')">Daxil ol →</button>
+        </div>
+    </div>
+
+    <!-- Tələbə -->
+    <div class="panel" id="panel-student">
+        <div class="card">
+            <h2>Tələbə girişi</h2>
+            <p class="subtitle">// student exam portal</p>
+            <div id="alert-student" class="alert"></div>
+            <div class="field">
+                <label>Aktiv imtahan</label>
+                <select id="student-exam">
+                    <option value="">Yüklənir...</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>Parol</label>
+                <input type="password" id="student-password" placeholder="••••••••">
+            </div>
+            <button class="btn btn-success" onclick="startExam()">İmtahana başla →</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let activeTab = 'teacher';
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', ['teacher','invigilator','student'][i] === tab);
+      });
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + tab).classList.add('active');
+      if (tab === 'student') loadActiveExams();
+    }
+
+    async function login(role) {
+      const isTeacher = role === 'teacher';
+      const username = document.getElementById(isTeacher ? 'teacher-username' : 'invig-username').value;
+      const password = document.getElementById(isTeacher ? 'teacher-password' : 'invig-password').value;
+      const alertEl = document.getElementById('alert-' + (isTeacher ? 'teacher' : 'invigilator'));
+      const btn = event.target;
+
+      if (!username || !password) {
+        alertEl.textContent = '✗ İstifadəçi adı və şifrəni daxil edin';
+        alertEl.className = 'alert error';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Yüklənir...';
+      alertEl.className = 'alert';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Giriş uğursuz oldu');
+
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('role', data.role);
+        localStorage.setItem('username', data.username);
+
+        if (data.role === 'TEACHER') window.location.href = '/teacher.html';
+        else if (data.role === 'INVIGILATOR') window.location.href = '/invigilator.html';
+        else if (data.role === 'ADMIN') window.location.href = '/admin.html';
+
+      } catch (err) {
+        alertEl.textContent = '✗ ' + err.message;
+        alertEl.className = 'alert error';
+        btn.disabled = false;
+        btn.innerHTML = 'Daxil ol →';
+      }
+    }
+
+    async function loadActiveExams() {
+      const select = document.getElementById('student-exam');
+      select.innerHTML = '<option value="">Yüklənir...</option>';
+      try {
+        const res = await fetch('/api/exam/active');
+        const exams = await res.json();
+        if (!exams.length) {
+          select.innerHTML = '<option value="">Aktiv imtahan yoxdur</option>';
+        } else {
+          select.innerHTML = exams.map(e =>
+            `<option value="${e.id}">${e.examName} — ${e.subject} (${e.durationMinutes} dəq)</option>`
+          ).join('');
+        }
+      } catch {
+        select.innerHTML = '<option value="">Yüklənə bilmədi</option>';
+      }
+    }
+
+    async function startExam() {
+      const examId = document.getElementById('student-exam').value;
+      const password = document.getElementById('student-password').value;
+      const alertEl = document.getElementById('alert-student');
+      const btn = event.target;
+
+      if (!examId || !password) {
+        alertEl.textContent = '✗ İmtahan seçin və parolu daxil edin';
+        alertEl.className = 'alert error';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Yüklənir...';
+      alertEl.className = 'alert';
+
+      try {
+        const res = await fetch(`/api/student/exam/${examId}/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Giriş uğursuz');
+
+        localStorage.setItem('sessionId', data.sessionId);
+        localStorage.setItem('endTime', data.endTime);
+        localStorage.setItem('examName', document.getElementById('student-exam').selectedOptions[0].text);
+        localStorage.setItem('durationMinutes', data.durationMinutes);
+        localStorage.setItem('studentName', data.studentName);
+        localStorage.setItem('groupName', data.groupName);
+        window.location.href = '/exam.html';
+
+      } catch (err) {
+        alertEl.textContent = '✗ ' + err.message;
+        alertEl.className = 'alert error';
+        btn.disabled = false;
+        btn.innerHTML = 'İmtahana başla →';
+      }
+    }
+
+    // Tələbə tabı default açıqsa imtahanları yüklə
+    loadActiveExams();
+</script>
+</body>
+</html>

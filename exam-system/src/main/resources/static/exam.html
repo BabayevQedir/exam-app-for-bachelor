@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İmtahan</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+          --bg: #f8f9fa;
+          --surface: #ffffff;
+          --border: #e2e8f0;
+          --accent: #4f46e5;
+          --accent-light: #eef2ff;
+          --danger: #ef4444;
+          --danger-light: #fef2f2;
+          --success: #10b981;
+          --success-light: #ecfdf5;
+          --warning: #f59e0b;
+          --text: #1e293b;
+          --text-muted: #64748b;
+          --mono: 'IBM Plex Mono', monospace;
+          --sans: 'IBM Plex Sans', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+          background: var(--bg);
+          color: var(--text);
+          font-family: var(--sans);
+          min-height: 100vh;
+        }
+
+        /* ── BAŞLIQ ── */
+        .header {
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background: var(--surface);
+          border-bottom: 1px solid var(--border);
+          padding: 14px 24px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+
+        .header-left h2 {
+          font-size: 16px;
+          font-weight: 600;
+        }
+
+        .header-left p {
+          font-size: 12px;
+          color: var(--text-muted);
+          margin-top: 2px;
+          font-family: var(--mono);
+        }
+
+        /* Vaxt sayğacı */
+        .timer {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: var(--accent-light);
+          border: 1px solid #c7d2fe;
+          border-radius: 10px;
+          padding: 8px 16px;
+          font-family: var(--mono);
+          font-size: 22px;
+          font-weight: 500;
+          color: var(--accent);
+          transition: all 0.3s;
+        }
+
+        .timer.warning {
+          background: #fff7ed;
+          border-color: #fed7aa;
+          color: var(--warning);
+        }
+
+        .timer.danger {
+          background: var(--danger-light);
+          border-color: #fecaca;
+          color: var(--danger);
+          animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+
+        .timer-icon { font-size: 18px; }
+
+        /* Progress bar */
+        .progress-bar {
+          height: 3px;
+          background: var(--border);
+          position: sticky;
+          top: 65px;
+          z-index: 99;
+        }
+
+        .progress-fill {
+          height: 100%;
+          background: var(--accent);
+          transition: width 1s linear;
+        }
+
+        /* ── MƏZMUN ── */
+        .container {
+          max-width: 860px;
+          margin: 0 auto;
+          padding: 32px 24px 120px;
+        }
+
+        /* Sual kartı */
+        .question-card {
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          padding: 28px;
+          margin-bottom: 20px;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .question-card.answered {
+          border-color: var(--success);
+          box-shadow: 0 0 0 3px rgba(16,185,129,0.08);
+        }
+
+        .question-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+          margin-bottom: 18px;
+        }
+
+        .question-number {
+          width: 32px;
+          height: 32px;
+          background: var(--accent-light);
+          color: var(--accent);
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 600;
+          font-size: 13px;
+          flex-shrink: 0;
+          font-family: var(--mono);
+        }
+
+        .question-card.answered .question-number {
+          background: var(--success-light);
+          color: var(--success);
+        }
+
+        .question-text {
+          font-size: 15px;
+          line-height: 1.7;
+          flex: 1;
+          padding-top: 4px;
+        }
+
+        .question-status {
+          font-size: 11px;
+          font-family: var(--mono);
+          padding: 3px 8px;
+          border-radius: 6px;
+          background: var(--border);
+          color: var(--text-muted);
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .question-card.answered .question-status {
+          background: var(--success-light);
+          color: var(--success);
+        }
+
+        /* Cavab tipi seçici */
+        .answer-type-tabs {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 16px;
+        }
+
+        .type-tab {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 14px;
+          border-radius: 8px;
+          border: 1px solid var(--border);
+          background: var(--bg);
+          cursor: pointer;
+          font-size: 13px;
+          font-family: var(--sans);
+          color: var(--text-muted);
+          transition: all 0.15s;
+        }
+
+        .type-tab:hover {
+          border-color: var(--accent);
+          color: var(--accent);
+        }
+
+        .type-tab.active {
+          background: var(--accent-light);
+          border-color: var(--accent);
+          color: var(--accent);
+          font-weight: 500;
+        }
+
+        /* Mətn cavab */
+        .answer-textarea {
+          width: 100%;
+          min-height: 140px;
+          padding: 14px;
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          font-size: 14px;
+          font-family: var(--sans);
+          resize: vertical;
+          outline: none;
+          transition: border-color 0.2s;
+          line-height: 1.7;
+          color: var(--text);
+          background: var(--bg);
+        }
+
+        .answer-textarea:focus {
+          border-color: var(--accent);
+          background: var(--surface);
+          box-shadow: 0 0 0 3px rgba(79,70,229,0.08);
+        }
+
+        /* Fayl yükləmə */
+        .file-upload-area {
+          border: 2px dashed var(--border);
+          border-radius: 10px;
+          padding: 32px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.2s;
+          background: var(--bg);
+        }
+
+        .file-upload-area:hover, .file-upload-area.dragover {
+          border-color: var(--accent);
+          background: var(--accent-light);
+        }
+
+        .file-upload-area .upload-icon { font-size: 32px; margin-bottom: 8px; }
+        .file-upload-area p { font-size: 14px; color: var(--text-muted); }
+        .file-upload-area span { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
+
+        .file-selected {
+          display: none;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 16px;
+          background: var(--success-light);
+          border: 1px solid #a7f3d0;
+          border-radius: 10px;
+          font-size: 13px;
+        }
+
+        .file-selected.show { display: flex; }
+        .file-selected .file-icon { font-size: 20px; }
+        .file-selected .file-name { flex: 1; font-family: var(--mono); color: var(--success); }
+
+        .btn-remove-file {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: var(--text-muted);
+          font-size: 16px;
+          padding: 2px 6px;
+          border-radius: 4px;
+        }
+        .btn-remove-file:hover { background: #fecaca; color: var(--danger); }
+
+        /* Saxla düyməsi */
+        .btn-save {
+          margin-top: 12px;
+          padding: 8px 20px;
+          background: var(--accent);
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          font-family: var(--sans);
+          transition: background 0.15s;
+        }
+        .btn-save:hover { background: #4338ca; }
+        .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .save-status {
+          display: inline-block;
+          margin-left: 10px;
+          font-size: 12px;
+          font-family: var(--mono);
+          color: var(--success);
+          opacity: 0;
+          transition: opacity 0.3s;
+        }
+        .save-status.show { opacity: 1; }
+
+        /* ── ALT PANEL (submit) ── */
+        .bottom-bar {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: var(--surface);
+          border-top: 1px solid var(--border);
+          padding: 16px 24px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
+          z-index: 100;
+        }
+
+        .answer-summary {
+          font-size: 13px;
+          color: var(--text-muted);
+          font-family: var(--mono);
+        }
+
+        .answer-summary span {
+          color: var(--accent);
+          font-weight: 600;
+        }
+
+        .btn-submit {
+          padding: 12px 32px;
+          background: var(--success);
+          color: #fff;
+          border: none;
+          border-radius: 10px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: var(--sans);
+          transition: all 0.2s;
+        }
+
+        .btn-submit:hover { background: #059669; transform: translateY(-1px); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Modal */
+        .modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 200;
+          display: none;
+        }
+
+        .modal-overlay.show { display: flex; }
+
+        .modal {
+          background: var(--surface);
+          border-radius: 20px;
+          padding: 36px;
+          max-width: 440px;
+          width: 90%;
+          text-align: center;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        .modal-icon { font-size: 48px; margin-bottom: 16px; }
+        .modal h3 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+        .modal p { color: var(--text-muted); font-size: 14px; margin-bottom: 28px; line-height: 1.6; }
+
+        .modal-btns { display: flex; gap: 12px; justify-content: center; }
+
+        .btn-cancel {
+          padding: 11px 24px;
+          border: 1px solid var(--border);
+          background: var(--surface);
+          border-radius: 10px;
+          font-size: 14px;
+          cursor: pointer;
+          font-family: var(--sans);
+        }
+
+        .btn-confirm {
+          padding: 11px 24px;
+          background: var(--success);
+          color: #fff;
+          border: none;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: var(--sans);
+        }
+
+        /* Bitdi ekranı */
+        .finished-screen {
+          display: none;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 80vh;
+          text-align: center;
+          padding: 32px;
+        }
+
+        .finished-screen.show { display: flex; }
+        .finished-icon { font-size: 64px; margin-bottom: 24px; }
+        .finished-screen h2 { font-size: 28px; font-weight: 600; margin-bottom: 12px; }
+        .finished-screen p { color: var(--text-muted); font-size: 15px; max-width: 400px; line-height: 1.7; }
+
+        /* Loading */
+        .spinner {
+          display: inline-block;
+          width: 14px; height: 14px;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: spin 0.6s linear infinite;
+          vertical-align: middle;
+          margin-right: 6px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<!-- Başlıq -->
+<div class="header" id="header">
+    <div class="header-left">
+        <h2 id="exam-name">İmtahan yüklənir...</h2>
+        <p id="exam-info"></p>
+    </div>
+    <div class="timer" id="timer">
+        <span class="timer-icon">⏱</span>
+        <span id="timer-display">--:--</span>
+    </div>
+</div>
+
+<!-- Progress bar -->
+<div class="progress-bar">
+    <div class="progress-fill" id="progress-fill" style="width:100%"></div>
+</div>
+
+<!-- Məzmun -->
+<div class="container" id="main-content">
+    <div id="questions-container"></div>
+</div>
+
+<!-- Bitdi ekranı -->
+<div class="finished-screen" id="finished-screen">
+    <div class="finished-icon">✅</div>
+    <h2>İmtahan təhvil verildi!</h2>
+    <p>Cavablarınız müəllimə göndərildi. Nəticəni daha sonra öyrənə bilərsiniz.</p>
+</div>
+
+<!-- Alt panel -->
+<div class="bottom-bar" id="bottom-bar">
+    <div class="answer-summary">
+        Cavablandı: <span id="answered-count">0</span> / <span id="total-count">0</span>
+    </div>
+    <button class="btn-submit" id="btn-submit" onclick="confirmSubmit()">
+        İmtahanı bitir ✓
+    </button>
+</div>
+
+<!-- Submit modal -->
+<div class="modal-overlay" id="submit-modal">
+    <div class="modal">
+        <div class="modal-icon">📋</div>
+        <h3>İmtahanı bitirmək istəyirsiniz?</h3>
+        <p id="modal-text">Bütün cavabları yoxladıqdan sonra təsdiq edin. Göndərildikdən sonra dəyişiklik etmək mümkün olmayacaq.</p>
+        <div class="modal-btns">
+            <button class="btn-cancel" onclick="closeModal()">Geri qayıt</button>
+            <button class="btn-confirm" onclick="submitExam()">Təsdiq et</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = '';
+    const sessionId = localStorage.getItem('sessionId');
+    const endTime = new Date(localStorage.getItem('endTime'));
+
+    let questions = [];
+    let answers = {}; // { questionId: { type: 'text'|'file', value } }
+    let timerInterval;
+    let submitted = false;
+
+    // ── BAŞLAT ──
+    window.onload = async () => {
+      if (!sessionId) {
+        window.location.href = '/';
+        return;
+      }
+      await loadQuestions();
+      startTimer();
+    };
+
+    // ── SUALLARI YÜKLƏ ──
+    async function loadQuestions() {
+      try {
+        const res = await fetch(`/api/student/session/${sessionId}/questions`);
+        if (!res.ok) throw new Error();
+        questions = await res.json();
+
+        // Başlıq
+        document.getElementById('exam-name').textContent =
+          localStorage.getItem('examName') || 'İmtahan';
+        document.getElementById('exam-info').textContent =
+          `${questions.length} sual • ${localStorage.getItem('durationMinutes') || '?'} dəqiqə`;
+        document.getElementById('total-count').textContent = questions.length;
+
+        renderQuestions();
+      } catch {
+        document.getElementById('questions-container').innerHTML =
+          '<p style="color:red;text-align:center;padding:40px">Suallar yüklənə bilmədi</p>';
+      }
+    }
+
+    // ── SUALLARI RENDER ET ──
+    function renderQuestions() {
+      const container = document.getElementById('questions-container');
+      container.innerHTML = '';
+
+      questions.forEach((q, idx) => {
+        const card = document.createElement('div');
+        card.className = 'question-card';
+        card.id = `card-${q.id}`;
+        card.innerHTML = `
+          <div class="question-header">
+            <div class="question-number">${idx + 1}</div>
+            <div class="question-text">${q.questionText}</div>
+            <div class="question-status" id="status-${q.id}">cavablanmayıb</div>
+          </div>
+
+          <!-- Cavab tipi seçici -->
+          <div class="answer-type-tabs">
+            <button class="type-tab active" id="tab-text-${q.id}" onclick="switchType(${q.id}, 'text')">
+              ✏️ Mətn yaz
+            </button>
+            <button class="type-tab" id="tab-file-${q.id}" onclick="switchType(${q.id}, 'file')">
+              📎 Fayl yüklə (.zip)
+            </button>
+          </div>
+
+          <!-- Mətn cavab -->
+          <div id="text-panel-${q.id}">
+            <textarea
+              class="answer-textarea"
+              id="textarea-${q.id}"
+              placeholder="Cavabınızı buraya yazın..."
+              oninput="onTextChange(${q.id})"
+            ></textarea>
+          </div>
+
+          <!-- Fayl cavab -->
+          <div id="file-panel-${q.id}" style="display:none">
+            <div class="file-upload-area" id="drop-${q.id}"
+              onclick="document.getElementById('file-${q.id}').click()"
+              ondragover="onDragOver(event, ${q.id})"
+              ondragleave="onDragLeave(${q.id})"
+              ondrop="onDrop(event, ${q.id})">
+              <div class="upload-icon">📦</div>
+              <p>ZIP faylını buraya sürükləyin və ya klikləyin</p>
+              <span>yalnız .zip formatı</span>
+            </div>
+            <div class="file-selected" id="file-selected-${q.id}">
+              <span class="file-icon">📦</span>
+              <span class="file-name" id="file-name-${q.id}"></span>
+              <button class="btn-remove-file" onclick="removeFile(${q.id})">✕</button>
+            </div>
+            <input type="file" id="file-${q.id}" accept=".zip" style="display:none"
+              onchange="onFileSelect(${q.id}, this)">
+          </div>
+
+          <!-- Saxla düyməsi -->
+          <div style="margin-top:14px; display:flex; align-items:center;">
+            <button class="btn-save" id="save-btn-${q.id}" onclick="saveAnswer(${q.id})">
+              Saxla
+            </button>
+            <span class="save-status" id="save-status-${q.id}">✓ Saxlandı</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // ── TİP SEÇ ──
+    function switchType(qId, type) {
+      document.getElementById(`text-panel-${qId}`).style.display = type === 'text' ? 'block' : 'none';
+      document.getElementById(`file-panel-${qId}`).style.display = type === 'file' ? 'block' : 'none';
+      document.getElementById(`tab-text-${qId}`).classList.toggle('active', type === 'text');
+      document.getElementById(`tab-file-${qId}`).classList.toggle('active', type === 'file');
+
+      if (!answers[qId]) answers[qId] = {};
+      answers[qId].type = type;
+    }
+
+    // ── MƏTNDƏYİŞDİ ──
+    function onTextChange(qId) {
+      const val = document.getElementById(`textarea-${qId}`).value;
+      if (!answers[qId]) answers[qId] = { type: 'text' };
+      answers[qId].value = val;
+    }
+
+    // ── FAYL SEÇ ──
+    function onFileSelect(qId, input) {
+      if (input.files[0]) setFile(qId, input.files[0]);
+    }
+
+    function onDragOver(e, qId) {
+      e.preventDefault();
+      document.getElementById(`drop-${qId}`).classList.add('dragover');
+    }
+
+    function onDragLeave(qId) {
+      document.getElementById(`drop-${qId}`).classList.remove('dragover');
+    }
+
+    function onDrop(e, qId) {
+      e.preventDefault();
+      document.getElementById(`drop-${qId}`).classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.name.endsWith('.zip')) setFile(qId, file);
+      else alert('Yalnız .zip formatı qəbul edilir!');
+    }
+
+    function setFile(qId, file) {
+      if (!answers[qId]) answers[qId] = { type: 'file' };
+      answers[qId].file = file;
+      document.getElementById(`drop-${qId}`).style.display = 'none';
+      document.getElementById(`file-selected-${qId}`).classList.add('show');
+      document.getElementById(`file-name-${qId}`).textContent = file.name;
+    }
+
+    function removeFile(qId) {
+      answers[qId] = { type: 'file' };
+      document.getElementById(`file-${qId}`).value = '';
+      document.getElementById(`drop-${qId}`).style.display = 'block';
+      document.getElementById(`file-selected-${qId}`).classList.remove('show');
+      markUnanswered(qId);
+    }
+
+    // ── CAVABI SAXLA ──
+    async function saveAnswer(qId) {
+      const ans = answers[qId];
+      if (!ans) return;
+
+      const btn = document.getElementById(`save-btn-${qId}`);
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Saxlanır...';
+
+      try {
+        if (ans.type === 'file' && ans.file) {
+          const formData = new FormData();
+          formData.append('questionId', qId);
+          formData.append('file', ans.file);
+          const res = await fetch(`/api/student/session/${sessionId}/answer/file`, {
+            method: 'POST',
+            body: formData
+          });
+          if (!res.ok) throw new Error();
+        } else if (ans.type === 'text' && ans.value && ans.value.trim()) {
+          const res = await fetch(`/api/student/session/${sessionId}/answer/text`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ questionId: qId, answerText: ans.value })
+          });
+          if (!res.ok) throw new Error();
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Saxla';
+          return;
+        }
+
+        markAnswered(qId);
+        showSaveStatus(qId);
+      } catch {
+        alert('Saxlama uğursuz oldu. Yenidən cəhd edin.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Saxla';
+      }
+    }
+
+    function markAnswered(qId) {
+      const card = document.getElementById(`card-${qId}`);
+      card.classList.add('answered');
+      document.getElementById(`status-${qId}`).textContent = '✓ cavablandı';
+      if (!answers[qId]) answers[qId] = {};
+      answers[qId].saved = true;
+      updateProgress();
+    }
+
+    function markUnanswered(qId) {
+      const card = document.getElementById(`card-${qId}`);
+      card.classList.remove('answered');
+      document.getElementById(`status-${qId}`).textContent = 'cavablanmayıb';
+      if (answers[qId]) answers[qId].saved = false;
+      updateProgress();
+    }
+
+    function showSaveStatus(qId) {
+      const el = document.getElementById(`save-status-${qId}`);
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2500);
+    }
+
+    function updateProgress() {
+      const answered = Object.values(answers).filter(a => a.saved).length;
+      document.getElementById('answered-count').textContent = answered;
+    }
+
+    // ── VAXT SAYĞACI ──
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        const now = new Date();
+        const diff = endTime - now;
+
+        if (diff <= 0) {
+          clearInterval(timerInterval);
+          document.getElementById('timer-display').textContent = '00:00';
+          autoSubmit();
+          return;
+        }
+
+        const mins = Math.floor(diff / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        const display = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+        document.getElementById('timer-display').textContent = display;
+
+        // Progress bar
+        const total = parseInt(localStorage.getItem('durationMinutes') || 60) * 60000;
+        const pct = (diff / total) * 100;
+        document.getElementById('progress-fill').style.width = pct + '%';
+
+        // Rəng dəyiş
+        const timer = document.getElementById('timer');
+        if (diff < 5 * 60000) timer.className = 'timer danger';
+        else if (diff < 10 * 60000) timer.className = 'timer warning';
+        else timer.className = 'timer';
+      }, 1000);
+    }
+
+    // ── SUBMIT ──
+    function confirmSubmit() {
+      const answered = Object.values(answers).filter(a => a.saved).length;
+      const total = questions.length;
+      const unanswered = total - answered;
+      const modal = document.getElementById('submit-modal');
+      const text = document.getElementById('modal-text');
+
+      if (unanswered > 0) {
+        text.textContent = `${unanswered} sual cavabsız qalır. Yenə də bitirmək istəyirsiniz?`;
+      } else {
+        text.textContent = 'Bütün suallar cavablandı. İmtahanı bitirirsiniz?';
+      }
+      modal.classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('submit-modal').classList.remove('show');
+    }
+
+    async function submitExam() {
+      if (submitted) return;
+      submitted = true;
+      closeModal();
+      clearInterval(timerInterval);
+
+      try {
+        await fetch(`/api/student/session/${sessionId}/submit`, { method: 'POST' });
+      } catch {}
+
+      showFinished();
+    }
+
+    async function autoSubmit() {
+      if (submitted) return;
+      submitted = true;
+      try {
+        await fetch(`/api/student/session/${sessionId}/submit`, { method: 'POST' });
+      } catch {}
+      showFinished(true);
+    }
+
+    function showFinished(timeout = false) {
+      document.getElementById('main-content').style.display = 'none';
+      document.getElementById('bottom-bar').style.display = 'none';
+      document.getElementById('header').style.display = 'none';
+      document.getElementById('progress-bar')?.remove();
+
+      const fs = document.getElementById('finished-screen');
+      if (timeout) {
+        fs.querySelector('p').textContent = 'Vaxt bitdi — cavablarınız avtomatik göndərildi.';
+      }
+      fs.classList.add('show');
+      localStorage.removeItem('sessionId');
+      localStorage.removeItem('endTime');
+    }
+</script>
+
+</body>
+</html>
