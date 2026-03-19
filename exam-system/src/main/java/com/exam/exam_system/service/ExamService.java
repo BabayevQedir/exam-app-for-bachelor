@@ -3,10 +3,12 @@ package com.exam.exam_system.service;
 import com.exam.exam_system.model.Exam;
 import com.exam.exam_system.model.Question;
 import com.exam.exam_system.model.Student;
+import com.exam.exam_system.model.Ticket;
 import com.exam.exam_system.repository.ExamRepository;
 import com.exam.exam_system.repository.QuestionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -14,13 +16,23 @@ import java.io.IOException;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class ExamService {
 
     private final ExamRepository examRepository;
     private final QuestionRepository questionRepository;
     private final ExcelImportService excelImportService;
+    private final TicketGeneratorService ticketGeneratorService;
+
+    public ExamService(ExamRepository examRepository,
+                       QuestionRepository questionRepository,
+                       ExcelImportService excelImportService,
+                       @Lazy TicketGeneratorService ticketGeneratorService) {
+        this.examRepository = examRepository;
+        this.questionRepository = questionRepository;
+        this.excelImportService = excelImportService;
+        this.ticketGeneratorService = ticketGeneratorService;
+    }
 
     public Exam createExamWithQuestions(String examName, String subject,
                                         Integer ticketCount, Integer questionsPerTicket,
@@ -48,28 +60,38 @@ public class ExamService {
         List<Question> questions = excelImportService.importQuestionsFromExcel(excelFile, savedExam);
         log.info("✅ {} sual yükləndi", questions.size());
 
-        // Sheet2 — tələbələr (examId ilə)
+        // Sheet2 — tələbələr
         List<Student> students = excelImportService.importStudentsFromExcel(excelFile, savedExam.getId());
         log.info("✅ {} tələbə yükləndi", students.size());
+
+        // PAPER imtahan üçün biletlər avtomatik yaranır
+        if (type == Exam.ExamType.PAPER) {
+            try {
+                List<Ticket> tickets = ticketGeneratorService.generateAllTickets(savedExam.getId());
+                log.info("✅ {} bilet avtomatik yaradıldı", tickets.size());
+                // Statusu ACTIVE et
+                savedExam.setStatus(Exam.ExamStatus.ACTIVE);
+                examRepository.save(savedExam);
+            } catch (Exception e) {
+                log.error("Bilet yaratmada xəta: {}", e.getMessage());
+            }
+        }
 
         return savedExam;
     }
 
-    // İmtahanı aktiv et
     public Exam activateExam(Long examId) {
         Exam exam = getExamById(examId);
         exam.setStatus(Exam.ExamStatus.ACTIVE);
         return examRepository.save(exam);
     }
 
-    // İmtahanı bitir
     public Exam finishExam(Long examId) {
         Exam exam = getExamById(examId);
         exam.setStatus(Exam.ExamStatus.FINISHED);
         return examRepository.save(exam);
     }
 
-    // Statusu istənilən vəziyyətə keçir (redaktə üçün)
     public Exam changeStatus(Long examId, String status) {
         Exam exam = getExamById(examId);
         exam.setStatus(Exam.ExamStatus.valueOf(status.toUpperCase()));

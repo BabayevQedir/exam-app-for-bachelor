@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Paneli</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+          --bg: #f1f5f9; --surface: #fff; --border: #e2e8f0;
+          --accent: #4f46e5; --accent-light: #eef2ff;
+          --success: #10b981; --success-light: #ecfdf5;
+          --danger: #ef4444; --danger-light: #fef2f2;
+          --warning: #f59e0b; --text: #1e293b; --text-muted: #64748b;
+          --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; }
+        .sidebar { position:fixed; left:0; top:0; bottom:0; width:240px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:10; }
+        .sidebar-logo { padding:20px; border-bottom:1px solid var(--border); }
+        .sidebar-logo h2 { font-size:15px; font-weight:600; font-family:var(--mono); }
+        .sidebar-logo p { font-size:11px; color:var(--text-muted); margin-top:2px; font-family:var(--mono); }
+        .sidebar-nav { padding:12px; flex:1; }
+        .nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; cursor:pointer; font-size:14px; color:var(--text-muted); transition:all 0.15s; margin-bottom:4px; border:none; background:none; width:100%; text-align:left; font-family:var(--sans); }
+        .nav-item:hover { background:var(--bg); color:var(--text); }
+        .nav-item.active { background:var(--accent-light); color:var(--accent); font-weight:500; }
+        .sidebar-footer { padding:16px; border-top:1px solid var(--border); }
+        .btn-logout { width:100%; padding:8px; border:1px solid var(--border); background:none; border-radius:8px; font-size:13px; cursor:pointer; color:var(--text-muted); font-family:var(--sans); transition:all 0.15s; }
+        .btn-logout:hover { background:var(--danger); color:#fff; border-color:var(--danger); }
+        .main { margin-left:240px; padding:28px; min-height:100vh; }
+        .page { display:none; }
+        .page.active { display:block; }
+        .page-title { font-size:20px; font-weight:600; margin-bottom:6px; }
+        .page-sub { font-size:13px; color:var(--text-muted); margin-bottom:24px; font-family:var(--mono); }
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:24px; margin-bottom:20px; }
+        .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+        .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; }
+        .stat-value { font-size:28px; font-weight:600; font-family:var(--mono); }
+        .stat-label { font-size:12px; color:var(--text-muted); margin-top:4px; }
+        .stat-card.blue .stat-value { color:var(--accent); }
+        .stat-card.green .stat-value { color:var(--success); }
+        .stat-card.orange .stat-value { color:var(--warning); }
+        .stat-card.red .stat-value { color:var(--danger); }
+        .table-wrap { overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; }
+        th { text-align:left; padding:10px 14px; font-size:12px; font-weight:500; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); font-family:var(--mono); }
+        td { padding:12px 14px; font-size:13px; border-bottom:1px solid var(--bg); vertical-align:middle; }
+        tr:last-child td { border-bottom:none; }
+        tr:hover td { background:var(--bg); }
+        .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:500; font-family:var(--mono); }
+        .badge-green { background:var(--success-light); color:var(--success); }
+        .badge-blue { background:var(--accent-light); color:var(--accent); }
+        .badge-gray { background:var(--bg); color:var(--text-muted); }
+        .badge-orange { background:#fff7ed; color:var(--warning); }
+        .badge-red { background:var(--danger-light); color:var(--danger); }
+        .btn { padding:7px 14px; border-radius:7px; font-size:12px; font-weight:500; cursor:pointer; border:none; font-family:var(--sans); transition:all 0.15s; }
+        .btn-primary { background:var(--accent); color:#fff; }
+        .btn-primary:hover { background:#4338ca; }
+        .btn-success { background:var(--success); color:#fff; }
+        .btn-success:hover { background:#059669; }
+        .btn-danger { background:var(--danger); color:#fff; }
+        .btn-danger:hover { background:#dc2626; }
+        .btn-outline { background:none; border:1px solid var(--border); color:var(--text); }
+        .btn-outline:hover { border-color:var(--accent); color:var(--accent); }
+        .btn-warning { background:var(--warning); color:#fff; }
+        .btn:disabled { opacity:0.5; cursor:not-allowed; }
+        .field { margin-bottom:16px; }
+        .field label { display:block; font-size:12px; font-weight:500; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; font-family:var(--mono); }
+        .field input, .field select { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:14px; outline:none; font-family:var(--sans); transition:border-color 0.2s; background:var(--surface); color:var(--text); }
+        .field input:focus, .field select:focus { border-color:var(--accent); }
+        .field input[type=file] { padding:8px; }
+        .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        .alert { padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:16px; font-family:var(--mono); display:none; }
+        .alert.error { background:var(--danger-light); border:1px solid #fecaca; color:var(--danger); display:block; }
+        .alert.success { background:var(--success-light); border:1px solid #a7f3d0; color:var(--success); display:block; }
+        .spinner { display:inline-block; width:13px; height:13px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 0.6s linear infinite; vertical-align:middle; margin-right:5px; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .loading { text-align:center; padding:40px; color:var(--text-muted); font-family:var(--mono); font-size:13px; }
+        .actions { display:flex; gap:6px; flex-wrap:wrap; }
+        /* Modal */
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; align-items:center; justify-content:center; }
+        .modal-overlay.show { display:flex; }
+        .modal { background:var(--surface); border-radius:16px; padding:28px; width:500px; max-width:90vw; box-shadow:0 20px 60px rgba(0,0,0,0.15); }
+        .modal h3 { font-size:16px; font-weight:600; margin-bottom:20px; }
+        .modal-btns { display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <h2>⚙️ Admin Paneli</h2>
+        <p id="sidebar-user">// admin</p>
+    </div>
+    <nav class="sidebar-nav">
+        <button class="nav-item active" onclick="showPage('dashboard')"><span>📊</span> Dashboard</button>
+        <button class="nav-item" onclick="showPage('exams')"><span>📝</span> İmtahanlar</button>
+        <button class="nav-item" onclick="showPage('create')"><span>➕</span> Yeni imtahan</button>
+        <button class="nav-item" onclick="showPage('students')"><span>👥</span> Tələbələr</button>
+        <button class="nav-item" onclick="showPage('users')"><span>🔐</span> İstifadəçilər</button>
+        <button class="nav-item" onclick="showPage('results')"><span>✅</span> Nəticələr</button>
+    </nav>
+    <div class="sidebar-footer">
+        <div style="font-size:12px;color:var(--text-muted);font-family:var(--mono);margin-bottom:8px">role: ADMIN</div>
+        <button class="btn-logout" onclick="logout()">Çıxış</button>
+    </div>
+</div>
+
+<div class="main">
+
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">// sistem statistikası</div>
+        <div class="stats-grid">
+            <div class="stat-card blue"><div class="stat-value" id="s-exams">—</div><div class="stat-label">Cəmi imtahan</div></div>
+            <div class="stat-card green"><div class="stat-value" id="s-students">—</div><div class="stat-label">Tələbə</div></div>
+            <div class="stat-card orange"><div class="stat-value" id="s-sessions">—</div><div class="stat-label">Sessiya</div></div>
+            <div class="stat-card red"><div class="stat-value" id="s-tickets">—</div><div class="stat-label">Bilet</div></div>
+        </div>
+        <div class="card">
+            <div style="font-size:14px;font-weight:600;margin-bottom:12px">Son imtahanlar</div>
+            <div class="table-wrap"><table><thead><tr><th>Ad</th><th>Növ</th><th>Status</th><th>Tarix</th></tr></thead>
+                <tbody id="dash-exams"><tr><td colspan="4" class="loading">Yüklənir...</td></tr></tbody></table></div>
+        </div>
+    </div>
+
+    <!-- İmtahanlar -->
+    <div class="page" id="page-exams">
+        <div class="page-title">İmtahanlar</div>
+        <div class="page-sub">// bütün imtahanlar — tam idarəetmə</div>
+        <div class="card">
+            <div class="table-wrap"><table>
+                <thead><tr><th>Ad</th><th>Fənn</th><th>Növ</th><th>Müddət</th><th>Status</th><th>Əməliyyat</th></tr></thead>
+                <tbody id="exams-tbody"><tr><td colspan="6" class="loading">Yüklənir...</td></tr></tbody>
+            </table></div>
+        </div>
+    </div>
+
+    <!-- Yeni imtahan -->
+    <div class="page" id="page-create">
+        <div class="page-title">Yeni imtahan yarat</div>
+        <div class="page-sub">// Excel faylından yüklə</div>
+        <div class="card">
+            <div id="alert-create" class="alert"></div>
+            <div class="form-grid">
+                <div class="field"><label>İmtahan adı</label><input type="text" id="c-name" placeholder="Java Final 2024"></div>
+                <div class="field"><label>Fənn</label><input type="text" id="c-subject" placeholder="Proqramlaşdırma"></div>
+                <div class="field"><label>İmtahan növü</label>
+                    <select id="c-type"><option value="COMPUTER">Kompüter əsaslı</option><option value="PAPER">Yazılı (kağız bilet)</option></select>
+                </div>
+                <div class="field"><label>Müddət (dəq)</label><input type="number" id="c-duration" value="60" min="10"></div>
+                <div class="field"><label>Hər tələbəyə sual sayı</label><input type="number" id="c-qpt" value="5" min="1"></div>
+                <div class="field"><label>Bilet sayı</label><input type="number" id="c-tickets" value="30" min="1"></div>
+            </div>
+            <div class="field"><label>Excel faylı (.xlsx)</label>
+                <input type="file" id="c-file" accept=".xlsx">
+                <div style="font-size:11px;color:var(--text-muted);margin-top:6px;font-family:var(--mono)">Sheet1: Sual | Bal &nbsp; Sheet2: Qrup | Ad Soyad Ata adı | Parol</div>
+            </div>
+            <button class="btn btn-primary" id="btn-create" onclick="createExam()" style="padding:10px 24px;font-size:14px">İmtahan yarat</button>
+        </div>
+    </div>
+
+    <!-- Tələbələr -->
+    <div class="page" id="page-students">
+        <div class="page-title">Tələbələr</div>
+        <div class="page-sub">// tələbə siyahısı + kimlik məlumatları</div>
+        <div class="card" style="margin-bottom:12px">
+            <div class="field" style="max-width:300px;margin:0">
+                <label>İmtahana görə filtrə</label>
+                <select id="student-exam-filter" onchange="loadStudents()">
+                    <option value="">Bütün tələbələr</option>
+                </select>
+            </div>
+        </div>
+        <div class="card">
+            <div class="table-wrap"><table>
+                <thead><tr><th>Ad Soyad Ata adı</th><th>Qrup</th><th>İmtahan</th><th>QR Token</th></tr></thead>
+                <tbody id="students-tbody"><tr><td colspan="4" class="loading">Yüklənir...</td></tr></tbody>
+            </table></div>
+        </div>
+    </div>
+
+    <!-- İstifadəçilər -->
+    <div class="page" id="page-users">
+        <div class="page-title">İstifadəçilər</div>
+        <div class="page-sub">// sistem istifadəçiləri</div>
+        <div class="card">
+            <div class="table-wrap"><table>
+                <thead><tr><th>İstifadəçi adı</th><th>Ad</th><th>Rol</th><th>Status</th></tr></thead>
+                <tbody id="users-tbody"><tr><td colspan="4" class="loading">Yüklənir...</td></tr></tbody>
+            </table></div>
+        </div>
+        <div class="card">
+            <div style="font-size:14px;font-weight:600;margin-bottom:16px">Yeni istifadəçi</div>
+            <div id="alert-user" class="alert"></div>
+            <div class="form-grid">
+                <div class="field"><label>İstifadəçi adı</label><input type="text" id="u-username"></div>
+                <div class="field"><label>Şifrə</label><input type="password" id="u-password"></div>
+                <div class="field"><label>Ad Soyad</label><input type="text" id="u-fullname"></div>
+                <div class="field"><label>Rol</label>
+                    <select id="u-role"><option value="TEACHER">Müəllim</option><option value="INVIGILATOR">Nəzarətçi</option><option value="ADMIN">Admin</option></select>
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="createUser()">İstifadəçi yarat</button>
+        </div>
+    </div>
+
+    <!-- Nəticələr -->
+    <div class="page" id="page-results">
+        <div class="page-title">Nəticələr</div>
+        <div class="page-sub">// imtahan nəticələri + tələbə kimliyi</div>
+        <div class="card" style="margin-bottom:12px">
+            <div class="field" style="max-width:300px;margin:0">
+                <label>İmtahan seç</label>
+                <select id="results-exam-select" onchange="loadResults()">
+                    <option value="">İmtahan seçin...</option>
+                </select>
+            </div>
+        </div>
+        <div id="results-container"></div>
+    </div>
+
+</div>
+
+<!-- Redaktə modal -->
+<div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+        <h3>İmtahanı redaktə et</h3>
+        <input type="hidden" id="edit-id">
+        <div class="form-grid">
+            <div class="field"><label>İmtahan adı</label><input type="text" id="edit-name"></div>
+            <div class="field"><label>Fənn</label><input type="text" id="edit-subject"></div>
+            <div class="field"><label>Müddət (dəq)</label><input type="number" id="edit-duration"></div>
+            <div class="field"><label>Sual sayı</label><input type="number" id="edit-qpt"></div>
+        </div>
+        <div class="field"><label>Status</label>
+            <select id="edit-status">
+                <option value="DRAFT">DRAFT — Gözləyir</option>
+                <option value="ACTIVE">ACTIVE — Aktiv</option>
+                <option value="FINISHED">FINISHED — Bitib</option>
+            </select>
+        </div>
+        <div id="edit-alert" class="alert"></div>
+        <div class="modal-btns">
+            <button class="btn btn-outline" onclick="closeModal('edit-modal')">Ləğv et</button>
+            <button class="btn btn-primary" onclick="saveEdit()">Saxla</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
+    const H = () => ({ 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' });
+
+    // ── NAVIQASIYA ──
+    function showPage(name) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('page-' + name).classList.add('active');
+      event.currentTarget.classList.add('active');
+      const loaders = { dashboard: loadDashboard, exams: loadExams, students: loadStudentsPage, users: loadUsers, results: loadResultsExams };
+      if (loaders[name]) loaders[name]();
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+    // ── DASHBOARD ──
+    async function loadDashboard() {
+      try {
+        const [exams, students] = await Promise.all([
+          fetch('/api/exam/list', { headers: H() }).then(r => r.json()),
+          fetch('/api/admin/students', { headers: H() }).then(r => r.json())
+        ]);
+        document.getElementById('s-exams').textContent = exams.length;
+        document.getElementById('s-students').textContent = students.length;
+        document.getElementById('s-sessions').textContent = '—';
+        document.getElementById('s-tickets').textContent = '—';
+        document.getElementById('dash-exams').innerHTML = exams.slice(0,5).map(e => `
+          <tr>
+            <td><strong>${e.examName}</strong> <span style="color:var(--text-muted);font-size:12px">— ${e.subject}</span></td>
+            <td><span class="badge ${e.examType==='COMPUTER'?'badge-blue':'badge-gray'}">${e.examType==='COMPUTER'?'Kompüter':'Yazılı'}</span></td>
+            <td>${statusBadge(e.status)}</td>
+            <td style="font-family:var(--mono);font-size:12px;color:var(--text-muted)">${e.createdAt?.substring(0,10)||'—'}</td>
+          </tr>`).join('');
+      } catch {}
+    }
+
+    // ── İMTAHANLAR ──
+    async function loadExams() {
+      try {
+        const exams = await fetch('/api/exam/list', { headers: H() }).then(r => r.json());
+        document.getElementById('exams-tbody').innerHTML = exams.map(e => `
+          <tr>
+            <td><strong>${e.examName}</strong></td>
+            <td>${e.subject||'—'}</td>
+            <td><span class="badge ${e.examType==='COMPUTER'?'badge-blue':'badge-gray'}">${e.examType==='COMPUTER'?'Kompüter':'Yazılı'}</span></td>
+            <td>${e.durationMinutes} dəq</td>
+            <td>${statusBadge(e.status)}</td>
+            <td class="actions">
+              <button class="btn btn-outline" onclick="openEditModal(${e.id},'${e.examName}','${e.subject}',${e.durationMinutes},${e.questionsPerTicket},'${e.status}')">✏️</button>
+              ${e.status==='DRAFT'?`<button class="btn btn-success" onclick="changeStatus(${e.id},'ACTIVE')">Aktiv et</button>`:''}
+              ${e.status==='ACTIVE'?`<button class="btn btn-outline" onclick="changeStatus(${e.id},'FINISHED')">Bitir</button>`:''}
+              ${e.status==='FINISHED'?`<button class="btn btn-warning" onclick="changeStatus(${e.id},'ACTIVE')" style="color:#fff">Yenidən aktiv</button>`:''}
+              ${e.examType==='PAPER'?`<button class="btn btn-outline" onclick="generateTickets(${e.id},this)">🎫 Bilet yarat</button>`:''}
+              ${e.examType==='PAPER'?`<button class="btn btn-primary" onclick="downloadTickets(${e.id})">⬇️ Biletlər</button>`:''}
+              <button class="btn btn-danger" onclick="deleteExam(${e.id},'${e.examName}')">🗑️</button>
+            </td>
+          </tr>`).join('');
+      } catch { document.getElementById('exams-tbody').innerHTML = '<tr><td colspan="6" class="loading">Yüklənə bilmədi</td></tr>'; }
+    }
+
+    function statusBadge(s) {
+      const m = {DRAFT:['badge-orange','Gözləyir'],ACTIVE:['badge-green','Aktiv'],FINISHED:['badge-gray','Bitib']};
+      const [c,l] = m[s]||['badge-gray',s];
+      return `<span class="badge ${c}">${l}</span>`;
+    }
+
+    async function changeStatus(id, status) {
+      await fetch(`/api/exam/${id}/status`, { method:'POST', headers: H(), body: JSON.stringify({status}) });
+      loadExams();
+    }
+
+    async function deleteExam(id, name) {
+      if (!confirm(`"${name}" imtahanını silmək istəyirsiniz?\nBütün suallar, biletlər və nəticələr də silinəcək!`)) return;
+      try {
+        const res = await fetch(`/api/admin/exam/${id}`, { method:'DELETE', headers: H() });
+        if (res.ok) { alert('İmtahan silindi'); loadExams(); }
+        else { const d = await res.json(); alert(d.error||'Xəta'); }
+      } catch { alert('Xəta baş verdi'); }
+    }
+
+    async function generateTickets(examId, btn) {
+      if (!confirm('Biletlər yaradılacaq. Davam?')) return;
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+      try {
+        const res = await fetch(`/api/tickets/${examId}/generate`, { method:'POST', headers: H() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        btn.textContent = '✅ Yaradıldı'; alert(data.message);
+      } catch(err) { alert('Xəta: '+err.message); btn.disabled=false; btn.textContent='🎫 Bilet yarat'; }
+    }
+
+    async function downloadTickets(examId) {
+      try {
+        const res = await fetch(`/api/tickets/${examId}/download-all`, { headers: H() });
+        if (!res.ok) { alert('Biletlər tapılmadı'); return; }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href=url; a.download=`exam_${examId}_biletler.docx`; a.click();
+        URL.revokeObjectURL(url);
+      } catch { alert('Yükləmə xətası'); }
+    }
+
+    // ── REDACTƏetmə ──
+    function openEditModal(id, name, subject, duration, qpt, status) {
+      document.getElementById('edit-id').value = id;
+      document.getElementById('edit-name').value = name;
+      document.getElementById('edit-subject').value = subject;
+      document.getElementById('edit-duration').value = duration;
+      document.getElementById('edit-qpt').value = qpt;
+      document.getElementById('edit-status').value = status;
+      document.getElementById('edit-alert').className = 'alert';
+      document.getElementById('edit-modal').classList.add('show');
+    }
+
+    async function saveEdit() {
+      const id = document.getElementById('edit-id').value;
+      const alertEl = document.getElementById('edit-alert');
+      const body = {
+        examName: document.getElementById('edit-name').value.trim(),
+        subject: document.getElementById('edit-subject').value.trim(),
+        durationMinutes: parseInt(document.getElementById('edit-duration').value),
+        questionsPerTicket: parseInt(document.getElementById('edit-qpt').value)
+      };
+      const status = document.getElementById('edit-status').value;
+      try {
+        await fetch(`/api/exam/${id}/update`, { method:'PUT', headers: H(), body: JSON.stringify(body) });
+        await fetch(`/api/exam/${id}/status`, { method:'POST', headers: H(), body: JSON.stringify({status}) });
+        closeModal('edit-modal');
+        loadExams();
+      } catch(err) {
+        alertEl.textContent = '✗ ' + err.message;
+        alertEl.className = 'alert error';
+      }
+    }
+
+    // ── İMTAHAN YARAT ──
+    async function createExam() {
+      const name = document.getElementById('c-name').value.trim();
+      const subject = document.getElementById('c-subject').value.trim();
+      const type = document.getElementById('c-type').value;
+      const duration = document.getElementById('c-duration').value;
+      const qpt = document.getElementById('c-qpt').value;
+      const tickets = document.getElementById('c-tickets').value;
+      const file = document.getElementById('c-file').files[0];
+      const alertEl = document.getElementById('alert-create');
+      const btn = document.getElementById('btn-create');
+      if (!name||!subject||!file) { alertEl.textContent='✗ Ad, fənn və fayl mütləqdir'; alertEl.className='alert error'; return; }
+      btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Yaradılır...'; alertEl.className='alert';
+      const fd = new FormData();
+      fd.append('examName',name); fd.append('subject',subject); fd.append('examType',type);
+      fd.append('durationMinutes',duration); fd.append('questionsPerTicket',qpt);
+      fd.append('ticketCount',tickets); fd.append('file',file);
+      try {
+        const res = await fetch('/api/exam/create', { method:'POST', headers:{'Authorization':'Bearer '+token}, body:fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        alertEl.textContent = `✓ İmtahan yaradıldı! ${data.questionCount} sual yükləndi.`;
+        alertEl.className = 'alert success';
+        document.getElementById('c-name').value=''; document.getElementById('c-subject').value=''; document.getElementById('c-file').value='';
+      } catch(err) { alertEl.textContent='✗ '+err.message; alertEl.className='alert error'; }
+      finally { btn.disabled=false; btn.textContent='İmtahan yarat'; }
+    }
+
+    // ── TƏLƏBƏlər ──
+    async function loadStudentsPage() {
+      try {
+        const exams = await fetch('/api/exam/list', { headers: H() }).then(r => r.json());
+        const sel = document.getElementById('student-exam-filter');
+        sel.innerHTML = '<option value="">Bütün tələbələr</option>' +
+          exams.map(e => `<option value="${e.id}">${e.examName}</option>`).join('');
+        loadStudents();
+      } catch {}
+    }
+
+    async function loadStudents() {
+      const examId = document.getElementById('student-exam-filter').value;
+      const tbody = document.getElementById('students-tbody');
+      tbody.innerHTML = '<tr><td colspan="4" class="loading">Yüklənir...</td></tr>';
+      try {
+        const students = await fetch('/api/admin/students', { headers: H() }).then(r => r.json());
+        const filtered = examId ? students.filter(s => String(s.examId) === examId) : students;
+        if (!filtered.length) { tbody.innerHTML='<tr><td colspan="4" class="loading">Tələbə tapılmadı</td></tr>'; return; }
+        tbody.innerHTML = filtered.map(s => `
+          <tr>
+            <td><strong>${s.fullName}</strong></td>
+            <td><span class="badge badge-blue">${s.groupName}</span></td>
+            <td style="font-size:12px;color:var(--text-muted);font-family:var(--mono)">${s.examId||'—'}</td>
+            <td style="font-size:11px;color:var(--text-muted);font-family:var(--mono)">${s.qrToken?.substring(0,16)}...</td>
+          </tr>`).join('');
+      } catch { tbody.innerHTML='<tr><td colspan="4" class="loading">Yüklənə bilmədi</td></tr>'; }
+    }
+
+    // ── İSTİFADƏÇİLƏR ──
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/admin/users', { headers: H() });
+        const users = await res.json();
+        document.getElementById('users-tbody').innerHTML = users.map(u => `
+          <tr>
+            <td><strong style="font-family:var(--mono)">${u.username}</strong></td>
+            <td>${u.fullName||'—'}</td>
+            <td><span class="badge ${u.role==='ADMIN'?'badge-red':u.role==='TEACHER'?'badge-blue':'badge-green'}">${u.role}</span></td>
+            <td><span class="badge ${u.enabled?'badge-green':'badge-gray'}">${u.enabled?'Aktiv':'Deaktiv'}</span></td>
+          </tr>`).join('');
+      } catch {}
+    }
+
+    async function createUser() {
+      const alertEl = document.getElementById('alert-user');
+      const body = {
+        username: document.getElementById('u-username').value.trim(),
+        password: document.getElementById('u-password').value,
+        fullName: document.getElementById('u-fullname').value.trim(),
+        role: document.getElementById('u-role').value
+      };
+      if (!body.username||!body.password) { alertEl.textContent='✗ İstifadəçi adı və şifrə mütləqdir'; alertEl.className='alert error'; return; }
+      try {
+        const res = await fetch('/api/auth/register', { method:'POST', headers: H(), body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        alertEl.textContent = '✓ İstifadəçi yaradıldı';
+        alertEl.className = 'alert success';
+        loadUsers();
+      } catch(err) { alertEl.textContent='✗ '+err.message; alertEl.className='alert error'; }
+    }
+
+    // ── NƏTİCƏLƏR ──
+    async function loadResultsExams() {
+      try {
+        const exams = await fetch('/api/exam/list', { headers: H() }).then(r => r.json());
+        const sel = document.getElementById('results-exam-select');
+        sel.innerHTML = '<option value="">İmtahan seçin...</option>' +
+          exams.map(e => `<option value="${e.id}">${e.examName} — ${e.subject}</option>`).join('');
+      } catch {}
+    }
+
+    async function loadResults() {
+      const examId = document.getElementById('results-exam-select').value;
+      const container = document.getElementById('results-container');
+      if (!examId) { container.innerHTML=''; return; }
+      container.innerHTML = '<div class="loading">Yüklənir...</div>';
+      try {
+        const [sessions, ticketMap] = await Promise.all([
+          fetch(`/api/results/exam/${examId}/sessions`, { headers: H() }).then(r => r.json()),
+          fetch(`/api/admin/exam/${examId}/tickets`, { headers: H() }).then(r => r.json())
+        ]);
+        if (!sessions.length) { container.innerHTML='<div class="card"><p style="color:var(--text-muted);font-size:13px">Nəticə yoxdur</p></div>'; return; }
+        container.innerHTML = `<div class="card"><div class="table-wrap"><table>
+          <thead><tr><th>#</th><th>Tələbə adı</th><th>Qrup</th><th>Status</th><th>Bal</th></tr></thead>
+          <tbody>${sessions.map((s,i) => {
+            const ticket = ticketMap.find(t => t.studentId === s.studentId) || {};
+            return `<tr>
+              <td>${i+1}</td>
+              <td><strong>${s.studentName||'—'}</strong></td>
+              <td><span class="badge badge-blue">${s.groupName||'—'}</span></td>
+              <td><span class="badge ${s.status==='SUBMITTED'?'badge-green':s.status==='TIMEOUT'?'badge-orange':'badge-blue'}">${s.status}</span></td>
+              <td style="font-family:var(--mono)">${s.totalScore!=null?`<strong>${s.totalScore}/50</strong>`:'<span style="color:var(--text-muted)">—</span>'}</td>
+            </tr>`;
+          }).join('')}</tbody></table></div></div>`;
+      } catch { container.innerHTML='<div class="card"><p style="color:var(--danger);font-size:13px">Yüklənə bilmədi</p></div>'; }
+    }
+
+    function logout() { localStorage.clear(); window.location.href = '/'; }
+
+    // Başlat
+    loadDashboard();
+</script>
+</body>
+</html>

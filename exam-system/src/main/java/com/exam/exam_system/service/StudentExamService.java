@@ -38,6 +38,11 @@ public class StudentExamService {
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new RuntimeException("İmtahan tapılmadı"));
 
+        // İmtahan növünü yoxla — PAPER imtahana sistem üzərindən daxil olmaq olmaz
+        if (exam.getExamType() == Exam.ExamType.PAPER) {
+            throw new IllegalStateException("Bu yazılı imtahandır — sistemdən daxil olmaq olmaz");
+        }
+
         if (exam.getStatus() != Exam.ExamStatus.ACTIVE) {
             throw new IllegalStateException("Bu imtahan aktiv deyil");
         }
@@ -177,4 +182,5 @@ public class StudentExamService {
             throw new IllegalStateException("İmtahan vaxtı bitib");
         }
     }
+
 }

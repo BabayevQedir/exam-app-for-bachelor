@@ -6,6 +6,7 @@ import com.google.zxing.WriterException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.util.Units;
+import org.apache.poi.wp.usermodel.HeaderFooterType;
 import org.apache.poi.xwpf.usermodel.*;
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.*;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,11 +31,6 @@ public class WordExportService {
 
     private static final int MAX_SCORE = 50;
 
-    // A4 eni: 11906 twip, sol 1701 + sağ 850 = 2551 kənar
-    // İstifadə olunan en: 11906 - 2551 = 9355 twip = ~16.5 sm
-    // _ simvolu Times New Roman 11pt ~ 7px = hər xətt ~100 simvol lazımdır
-    private static final String LINE = "________________________________________________________________________________________________________________________________________________";
-
     public String generateAllTicketsWord(Long examId, List<Ticket> tickets)
             throws IOException, WriterException {
         Path outputPath = Paths.get(outputDir);
@@ -43,6 +39,7 @@ public class WordExportService {
         String filePath = outputDir + "/" + fileName;
         try (XWPFDocument doc = new XWPFDocument()) {
             setPageSize(doc);
+            addFooterToDoc(doc);
             for (int i = 0; i < tickets.size(); i++) {
                 addTicket(doc, tickets.get(i));
                 if (i < tickets.size() - 1) {
@@ -67,12 +64,55 @@ public class WordExportService {
         String filePath = outputDir + "/" + fileName;
         try (XWPFDocument doc = new XWPFDocument()) {
             setPageSize(doc);
+            addFooterToDoc(doc);
             addTicket(doc, ticket);
             try (FileOutputStream out = new FileOutputStream(filePath)) {
                 doc.write(out);
             }
         }
         return filePath;
+    }
+
+    // Footer — Yoxlayan / Bal / İmza həmişə səhifənin ən aşağısında
+    private void addFooterToDoc(XWPFDocument doc) throws IOException {
+        XWPFFooter footer = doc.createFooter(HeaderFooterType.DEFAULT);
+
+        // Ayırıcı xətt
+        XWPFParagraph hrPar = footer.createParagraph();
+        hrPar.setSpacingBefore(0);
+        hrPar.setSpacingAfter(80);
+        CTPPr pPr = hrPar.getCTP().isSetPPr() ? hrPar.getCTP().getPPr() : hrPar.getCTP().addNewPPr();
+        CTPBdr bdr = pPr.isSetPBdr() ? pPr.getPBdr() : pPr.addNewPBdr();
+        CTBorder b = bdr.addNewTop();
+        b.setVal(STBorder.SINGLE);
+        b.setSz(BigInteger.valueOf(6));
+        b.setColor("AAAAAA");
+        hrPar.createRun().setText("");
+
+        // Yoxlayan | Bal | İmza — 3 sütunlu cədvəl
+        XWPFTable sign = footer.createTable(1, 3);
+        sign.setWidth("100%");
+        removeBorders(sign);
+
+        XWPFParagraph p1 = sign.getRow(0).getCell(0).getParagraphs().get(0);
+        p1.setSpacingAfter(0); p1.setSpacingBefore(0);
+        XWPFRun r1 = p1.createRun();
+        r1.setFontSize(11); r1.setFontFamily("Times New Roman");
+        r1.setText("Yoxlayan: ___________________");
+
+        XWPFParagraph p2 = sign.getRow(0).getCell(1).getParagraphs().get(0);
+        p2.setAlignment(ParagraphAlignment.CENTER);
+        p2.setSpacingAfter(0); p2.setSpacingBefore(0);
+        XWPFRun r2 = p2.createRun();
+        r2.setBold(true); r2.setFontSize(11); r2.setFontFamily("Times New Roman");
+        r2.setText("Bal: _______ / " + MAX_SCORE);
+
+        XWPFParagraph p3 = sign.getRow(0).getCell(2).getParagraphs().get(0);
+        p3.setAlignment(ParagraphAlignment.RIGHT);
+        p3.setSpacingAfter(0); p3.setSpacingBefore(0);
+        XWPFRun r3 = p3.createRun();
+        r3.setFontSize(11); r3.setFontFamily("Times New Roman");
+        r3.setText("İmza: _______________");
     }
 
     private void addTicket(XWPFDocument doc, Ticket ticket)
@@ -83,12 +123,10 @@ public class WordExportService {
         hdr.setWidth("100%");
         removeBorders(hdr);
 
-        // Sol xana — QR kod (80x80)
         XWPFTableCell qrCell = hdr.getRow(0).getCell(0);
         qrCell.setWidth("1500");
         XWPFParagraph qrPara = qrCell.getParagraphs().get(0);
-        qrPara.setSpacingAfter(0);
-        qrPara.setSpacingBefore(0);
+        qrPara.setSpacingAfter(0); qrPara.setSpacingBefore(0);
         XWPFRun qrRun = qrPara.createRun();
         byte[] qrBytes = qrCodeService.generateQrCode(ticket.getQrToken(), 120, 120);
         try (InputStream is = new ByteArrayInputStream(qrBytes)) {
@@ -100,7 +138,6 @@ public class WordExportService {
             }
         }
 
-        // Sağ xana — fənn, bilet №, müddət
         XWPFTableCell infoCell = hdr.getRow(0).getCell(1);
         String subject = ticket.getExam().getSubject() != null
                 ? ticket.getExam().getSubject() : ticket.getExam().getExamName();
@@ -108,136 +145,50 @@ public class WordExportService {
         infoLine(infoCell, "Bilet №:", String.valueOf(ticket.getTicketNumber()));
         infoLine(infoCell, "Müddət:", ticket.getExam().getDurationMinutes() + " dəq");
 
-        // ── AYIRICI XƏTTİ ──
+        // ── AYIRICI ──
         hrLine(doc);
 
         // ── SUALLAR ──
         List<Question> qs = ticket.getQuestions();
         for (int i = 0; i < qs.size(); i++) {
             XWPFParagraph p = doc.createParagraph();
-            p.setSpacingBefore(40);
+            p.setSpacingBefore(60);
             p.setSpacingAfter(0);
             XWPFRun nr = p.createRun();
-            nr.setBold(true);
-            nr.setFontSize(11);
-            nr.setFontFamily("Times New Roman");
+            nr.setBold(true); nr.setFontSize(11); nr.setFontFamily("Times New Roman");
             nr.setText((i + 1) + ".  ");
             XWPFRun tr = p.createRun();
-            tr.setFontSize(11);
-            tr.setFontFamily("Times New Roman");
+            tr.setFontSize(11); tr.setFontFamily("Times New Roman");
             tr.setText(qs.get(i).getQuestionText());
         }
 
-        // Cəmi bal — sağda
+        // Cəmi bal
         XWPFParagraph cp = doc.createParagraph();
         cp.setAlignment(ParagraphAlignment.RIGHT);
-        cp.setSpacingBefore(60);
-        cp.setSpacingAfter(0);
+        cp.setSpacingBefore(80); cp.setSpacingAfter(0);
         XWPFRun cr = cp.createRun();
-        cr.setBold(true);
-        cr.setFontSize(11);
-        cr.setFontFamily("Times New Roman");
+        cr.setBold(true); cr.setFontSize(11); cr.setFontFamily("Times New Roman");
         cr.setText("Cəmi: " + MAX_SCORE + " bal");
-
-        // ── AYIRICI XƏTTİ ──
-        hrLine(doc);
-
-        // ── CAVAB XƏTLƏRİ ──
-        // A4 hündürlük: 16838 twip
-        // Yuxarı + aşağı kənar: 1134 x2 = 2268
-        // İstifadə olunan: 16838 - 2268 = 14570 twip = ~25.7 sm
-        // Başlıq + suallar (3 sual) ~ 6 sm = ~3400 twip
-        // Yoxlayan sətri ~ 1 sm = ~560 twip
-        // Ayırıcılar ~ 0.8 sm = ~450 twip
-        // Qalan cavab üçün: 14570 - 3400 - 560 - 450 = ~10160 twip = ~17.9 sm
-        // Cavab xətləri — tam en boyunca cədvəl ilə
-        XWPFTable lineTable = doc.createTable(17, 1);
-        lineTable.setWidth("100%");
-        CTTblPr tblPr = lineTable.getCTTbl().getTblPr();
-        CTTblBorders tblBorders = tblPr.isSetTblBorders() ? tblPr.getTblBorders() : tblPr.addNewTblBorders();
-        CTBorder noB = CTBorder.Factory.newInstance(); noB.setVal(STBorder.NONE);
-        tblBorders.setTop(noB); tblBorders.setLeft(noB); tblBorders.setRight(noB);
-        tblBorders.setInsideV(noB); tblBorders.setInsideH(noB);
-        CTBorder lineB = CTBorder.Factory.newInstance();
-        lineB.setVal(STBorder.SINGLE); lineB.setSz(BigInteger.valueOf(4)); lineB.setColor("999999");
-        tblBorders.setBottom(lineB);
-        for (int i = 0; i < 17; i++) {
-            XWPFTableCell lc = lineTable.getRow(i).getCell(0);
-            CTTcPr tcPr = lc.getCTTc().isSetTcPr() ? lc.getCTTc().getTcPr() : lc.getCTTc().addNewTcPr();
-            CTTcBorders tcBorders = tcPr.isSetTcBorders() ? tcPr.getTcBorders() : tcPr.addNewTcBorders();
-            CTBorder tcNoB = CTBorder.Factory.newInstance(); tcNoB.setVal(STBorder.NONE);
-            tcBorders.setTop(tcNoB); tcBorders.setLeft(tcNoB); tcBorders.setRight(tcNoB); tcBorders.setInsideH(tcNoB);
-            CTBorder tcBot = CTBorder.Factory.newInstance();
-            tcBot.setVal(STBorder.SINGLE); tcBot.setSz(BigInteger.valueOf(4)); tcBot.setColor("AAAAAA");
-            tcBorders.setBottom(tcBot);
-            XWPFParagraph lp = lc.getParagraphs().get(0);
-            lp.setSpacingBefore(0);
-            lp.setSpacingAfter(160);
-            lp.createRun().setText("");
-        }
-
-        // ── YOXLAYAN + BAL + İMZA ──
-        XWPFParagraph spacer = doc.createParagraph();
-        spacer.setSpacingBefore(300);
-        spacer.setSpacingAfter(0);
-        spacer.createRun().setText("");
-
-//        hrLine(doc);
-
-        XWPFTable sign = doc.createTable(1, 3);
-        sign.setWidth("100%");
-        removeBorders(sign);
-
-        XWPFParagraph p1 = sign.getRow(0).getCell(0).getParagraphs().get(0);
-        p1.setSpacingAfter(0);
-        XWPFRun r1 = p1.createRun();
-        r1.setFontSize(11);
-        r1.setFontFamily("Times New Roman");
-        r1.setText("Yoxlayan: ___________________");
-
-        XWPFParagraph p2 = sign.getRow(0).getCell(1).getParagraphs().get(0);
-        p2.setAlignment(ParagraphAlignment.CENTER);
-        p2.setSpacingAfter(0);
-        XWPFRun r2 = p2.createRun();
-        r2.setBold(true);
-        r2.setFontSize(11);
-        r2.setFontFamily("Times New Roman");
-        r2.setText("Bal: _______ / " + MAX_SCORE);
-
-        XWPFParagraph p3 = sign.getRow(0).getCell(2).getParagraphs().get(0);
-        p3.setAlignment(ParagraphAlignment.RIGHT);
-        p3.setSpacingAfter(0);
-        XWPFRun r3 = p3.createRun();
-        r3.setFontSize(11);
-        r3.setFontFamily("Times New Roman");
-        r3.setText("İmza: _______________");
     }
 
     private void infoLine(XWPFTableCell cell, String label, String value) {
         XWPFParagraph p = cell.addParagraph();
-        p.setSpacingBefore(20);
-        p.setSpacingAfter(0);
+        p.setSpacingBefore(20); p.setSpacingAfter(0);
         XWPFRun l = p.createRun();
-        l.setBold(true);
-        l.setFontSize(11);
-        l.setFontFamily("Times New Roman");
+        l.setBold(true); l.setFontSize(11); l.setFontFamily("Times New Roman");
         l.setText(label + " ");
         XWPFRun v = p.createRun();
-        v.setFontSize(11);
-        v.setFontFamily("Times New Roman");
+        v.setFontSize(11); v.setFontFamily("Times New Roman");
         v.setText(value);
     }
 
     private void hrLine(XWPFDocument doc) {
         XWPFParagraph p = doc.createParagraph();
-        p.setSpacingBefore(40);
-        p.setSpacingAfter(40);
+        p.setSpacingBefore(40); p.setSpacingAfter(40);
         CTPPr pPr = p.getCTP().addNewPPr();
         CTPBdr bdr = pPr.addNewPBdr();
         CTBorder b = bdr.addNewBottom();
-        b.setVal(STBorder.SINGLE);
-        b.setSz(BigInteger.valueOf(4));
-        b.setColor("AAAAAA");
+        b.setVal(STBorder.SINGLE); b.setSz(BigInteger.valueOf(4)); b.setColor("AAAAAA");
         p.createRun().setText("");
     }
 
@@ -251,22 +202,19 @@ public class WordExportService {
         sz.setH(BigInteger.valueOf(16838));
         CTPageMar m = sectPr.isSetPgMar() ? sectPr.getPgMar() : sectPr.addNewPgMar();
         m.setTop(BigInteger.valueOf(1134));
-        m.setBottom(BigInteger.valueOf(1134));
+        m.setBottom(BigInteger.valueOf(1700)); // footer üçün daha böyük aşağı kənar
         m.setLeft(BigInteger.valueOf(1701));
         m.setRight(BigInteger.valueOf(850));
+        // Footer məsafəsi
+        m.setFooter(BigInteger.valueOf(720));
     }
 
     private void removeBorders(XWPFTable table) {
         CTTblPr tblPr = table.getCTTbl().getTblPr();
         CTTblBorders borders = tblPr.isSetTblBorders() ?
                 tblPr.getTblBorders() : tblPr.addNewTblBorders();
-        CTBorder nb = CTBorder.Factory.newInstance();
-        nb.setVal(STBorder.NONE);
-        borders.setTop(nb);
-        borders.setBottom(nb);
-        borders.setLeft(nb);
-        borders.setRight(nb);
-        borders.setInsideH(nb);
-        borders.setInsideV(nb);
+        CTBorder nb = CTBorder.Factory.newInstance(); nb.setVal(STBorder.NONE);
+        borders.setTop(nb); borders.setBottom(nb); borders.setLeft(nb);
+        borders.setRight(nb); borders.setInsideH(nb); borders.setInsideV(nb);
     }
 }

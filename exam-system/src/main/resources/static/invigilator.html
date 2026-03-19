@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nəzarətçi Paneli</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+          --bg: #f1f5f9; --surface: #fff; --border: #e2e8f0;
+          --accent: #4f46e5; --accent-light: #eef2ff;
+          --success: #10b981; --success-light: #ecfdf5;
+          --danger: #ef4444; --warning: #f59e0b;
+          --text: #1e293b; --text-muted: #64748b;
+          --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; }
+        .sidebar { position:fixed; left:0; top:0; bottom:0; width:240px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:10; }
+        .sidebar-logo { padding:20px; border-bottom:1px solid var(--border); }
+        .sidebar-logo h2 { font-size:15px; font-weight:600; font-family:var(--mono); }
+        .sidebar-logo p { font-size:11px; color:var(--text-muted); margin-top:2px; font-family:var(--mono); }
+        .sidebar-nav { padding:12px; flex:1; }
+        .nav-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; cursor:pointer; font-size:14px; color:var(--text-muted); transition:all 0.15s; margin-bottom:4px; border:none; background:none; width:100%; text-align:left; font-family:var(--sans); }
+        .nav-item:hover { background:var(--bg); color:var(--text); }
+        .nav-item.active { background:var(--accent-light); color:var(--accent); font-weight:500; }
+        .sidebar-footer { padding:16px; border-top:1px solid var(--border); }
+        .btn-logout { width:100%; padding:8px; border:1px solid var(--border); background:none; border-radius:8px; font-size:13px; cursor:pointer; color:var(--text-muted); font-family:var(--sans); transition:all 0.15s; }
+        .btn-logout:hover { background:var(--danger); color:#fff; border-color:var(--danger); }
+        .main { margin-left:240px; padding:28px; min-height:100vh; }
+        .page { display:none; }
+        .page.active { display:block; }
+        .page-title { font-size:20px; font-weight:600; margin-bottom:6px; }
+        .page-sub { font-size:13px; color:var(--text-muted); margin-bottom:24px; font-family:var(--mono); }
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:24px; margin-bottom:20px; }
+        .field { margin-bottom:16px; }
+        .field label { display:block; font-size:12px; font-weight:500; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; font-family:var(--mono); }
+        .field select { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:14px; outline:none; font-family:var(--sans); transition:border-color 0.2s; background:var(--surface); color:var(--text); }
+        .field select:focus { border-color:var(--accent); }
+
+        /* QR nəticə */
+        .qr-result { display:none; border-radius:16px; padding:32px; text-align:center; margin-top:20px; }
+        .qr-result.show { display:block; }
+        .qr-result.success { background:var(--success-light); border:2px solid var(--success); }
+        .qr-result.error { background:#fef2f2; border:2px solid var(--danger); }
+        .qr-icon { font-size:56px; margin-bottom:16px; }
+        .qr-name { font-size:26px; font-weight:600; margin-bottom:6px; }
+        .qr-group { font-size:14px; color:var(--text-muted); font-family:var(--mono); margin-bottom:20px; }
+        .qr-ticket { display:inline-block; background:var(--success); color:#fff; padding:12px 32px; border-radius:12px; font-size:20px; font-weight:600; font-family:var(--mono); margin-bottom:8px; }
+        .qr-msg { font-size:13px; color:var(--text-muted); margin-top:8px; }
+
+        /* QR oxuma izahatı */
+        .qr-info { background:var(--accent-light); border:1px solid #c7d2fe; border-radius:10px; padding:16px; font-size:13px; color:var(--accent); font-family:var(--mono); line-height:1.8; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <h2>🔍 Nəzarətçi Paneli</h2>
+        <p id="sidebar-user">// yüklənir...</p>
+    </div>
+    <nav class="sidebar-nav">
+        <button class="nav-item active" onclick="showPage('qr')"><span>📷</span> QR Oxut</button>
+        <button class="nav-item" onclick="showPage('tickets')"><span>🖨️</span> Biletlər</button>
+    </nav>
+    <div class="sidebar-footer">
+        <div style="font-size:12px;color:var(--text-muted);font-family:var(--mono);margin-bottom:8px">role: INVIGILATOR</div>
+        <button class="btn-logout" onclick="logout()">Çıxış</button>
+    </div>
+</div>
+
+<div class="main">
+
+    <!-- QR Oxut -->
+    <div class="page active" id="page-qr">
+        <div class="page-title">QR Kod Oxut</div>
+        <div class="page-sub">// tələbənin bilet kağızındakı QR kodu telefon ilə oxudun</div>
+
+        <div class="card">
+            <div class="qr-info">
+                📱 Telefon kamerası ilə tələbənin biletindəki QR kodu oxudun<br>
+                🔗 Link avtomatik açılacaq və tələbənin adı görünəcək<br>
+                📋 Bilet nömrəsinə uyğun kağızı həmin tələbəyə ver
+            </div>
+        </div>
+
+        <!-- URL-dən token gəlirsə nəticə göstər -->
+        <div class="qr-result" id="qr-result">
+            <div class="qr-icon" id="qr-icon"></div>
+            <div class="qr-name" id="qr-name"></div>
+            <div class="qr-group" id="qr-group"></div>
+            <div class="qr-ticket" id="qr-ticket"></div>
+            <div class="qr-msg" id="qr-msg"></div>
+        </div>
+    </div>
+
+    <!-- Biletlər -->
+    <div class="page" id="page-tickets">
+        <div class="page-title">Biletlər</div>
+        <div class="page-sub">// yazılı imtahan biletlərini çap et</div>
+        <div class="card">
+            <div class="field">
+                <label>İmtahan seç</label>
+                <select id="ticket-select" onchange="showTicketDownload()">
+                    <option value="">Yüklənir...</option>
+                </select>
+            </div>
+            <div id="ticket-download-area"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
+
+    function showPage(name) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('page-' + name).classList.add('active');
+      event.currentTarget.classList.add('active');
+      if (name === 'tickets') loadTicketExams();
+    }
+
+    // URL-dən token gəlirsə avtomatik oxut
+    const urlToken = new URLSearchParams(window.location.search).get('token');
+    if (urlToken) {
+      setTimeout(() => scanQrToken(urlToken), 300);
+    }
+
+    async function scanQrToken(qrToken) {
+      const result = document.getElementById('qr-result');
+      try {
+        const res = await fetch(`/api/qr/scan?token=${encodeURIComponent(qrToken)}`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+          result.className = 'qr-result error show';
+          document.getElementById('qr-icon').textContent = '❌';
+          document.getElementById('qr-name').textContent = data.error || 'QR kod tanınmadı';
+          document.getElementById('qr-group').textContent = '';
+          document.getElementById('qr-ticket').textContent = '';
+          document.getElementById('qr-msg').textContent = '';
+          return;
+        }
+
+        result.className = 'qr-result success show';
+        document.getElementById('qr-icon').textContent = '✅';
+        document.getElementById('qr-name').textContent = data.studentName;
+        document.getElementById('qr-group').textContent = data.groupName;
+        document.getElementById('qr-ticket').textContent = 'Bilet № ' + (data.ticketNumber || '—');
+        document.getElementById('qr-msg').textContent = '✅ Bu bileti həmin tələbəyə verin';
+
+      } catch {
+        result.className = 'qr-result error show';
+        document.getElementById('qr-icon').textContent = '❌';
+        document.getElementById('qr-name').textContent = 'Xəta baş verdi';
+        document.getElementById('qr-group').textContent = '';
+        document.getElementById('qr-ticket').textContent = '';
+        document.getElementById('qr-msg').textContent = '';
+      }
+    }
+
+    // Biletlər
+    async function loadTicketExams() {
+      const select = document.getElementById('ticket-select');
+      try {
+        const res = await fetch('/api/exam/list', { headers: { 'Authorization': 'Bearer ' + token } });
+        const exams = await res.json();
+        const paperExams = exams.filter(e => e.examType === 'PAPER');
+        if (!paperExams.length) {
+          select.innerHTML = '<option value="">Yazılı imtahan yoxdur</option>';
+          return;
+        }
+        select.innerHTML = '<option value="">İmtahan seçin...</option>' +
+          paperExams.map(e => `<option value="${e.id}">${e.examName} — ${e.subject}</option>`).join('');
+      } catch {
+        select.innerHTML = '<option value="">Yüklənə bilmədi</option>';
+      }
+    }
+
+    function showTicketDownload() {
+      const examId = document.getElementById('ticket-select').value;
+      const area = document.getElementById('ticket-download-area');
+      if (!examId) { area.innerHTML = ''; return; }
+      area.innerHTML = `
+        <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+          <button onclick="downloadTickets(${examId})"
+            style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;
+                   background:var(--accent);color:#fff;border-radius:10px;
+                   font-size:14px;font-weight:600;cursor:pointer;border:none;font-family:var(--sans)">
+            🖨️ Bütün biletləri yüklə (.docx)
+          </button>
+          <span style="font-size:12px;color:var(--text-muted);font-family:var(--mono)">
+            Hər səhifə bir biletdir — çap edin, kəsin, paylaşın
+          </span>
+        </div>`;
+    }
+
+    async function downloadTickets(examId) {
+      try {
+        // Əvvəlcə bilet var mı yoxla
+        const listRes = await fetch(`/api/tickets/${examId}/list`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const tickets = await listRes.json();
+        if (!tickets.length) {
+          alert('Bu imtahan üçün bilet tapılmadı. Admin bilet yaratmalıdır.');
+          return;
+        }
+        const res = await fetch(`/api/tickets/${examId}/download-all`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) { alert('Yükləmə zamanı xəta baş verdi'); return; }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `biletler_${examId}.docx`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch(e) { alert('Xəta: ' + e.message); }
+    }
+
+    async function loadUser() {
+      try {
+        const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await res.json();
+        document.getElementById('sidebar-user').textContent = '// ' + data.username;
+      } catch {}
+    }
+
+    function logout() { localStorage.clear(); window.location.href = '/'; }
+
+    loadUser();
+    loadTicketExams();
+</script>
+</body>
+</html>

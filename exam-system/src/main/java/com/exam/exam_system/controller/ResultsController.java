@@ -1,6 +1,11 @@
 package com.exam.exam_system.controller;
 
 import com.exam.exam_system.model.*;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import java.io.File;
 import com.exam.exam_system.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -9,12 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import java.io.File;
 
 @RestController
 @RequestMapping("/api/results")
@@ -30,6 +29,9 @@ public class ResultsController {
         return ResponseEntity.ok(sessions.stream().map(s -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", s.getId());
+            map.put("studentName", s.getStudent().getFullName());
+            map.put("groupName", s.getStudent().getGroupName());
+            map.put("studentId", s.getStudent().getId());
             map.put("status", s.getStatus());
             map.put("startTime", s.getStartTime().toString());
             map.put("submittedAt", s.getSubmittedAt() != null ? s.getSubmittedAt().toString() : "");
@@ -54,6 +56,28 @@ public class ResultsController {
         }).toList());
     }
 
+    // Zip faylı yüklə
+    @GetMapping("/answer/{answerId}/download")
+    public ResponseEntity<Resource> downloadAnswerFile(@PathVariable Long answerId) {
+        try {
+            StudentAnswer answer = answerRepository.findById(answerId)
+                    .orElseThrow(() -> new RuntimeException("Cavab tapılmadı"));
+            if (answer.getAttachedFilePath() == null) {
+                return ResponseEntity.notFound().build();
+            }
+            File file = new File(answer.getAttachedFilePath());
+            if (!file.exists()) return ResponseEntity.notFound().build();
+            Resource resource = new FileSystemResource(file);
+            String fileName = answer.getOriginalFileName() != null ? answer.getOriginalFileName() : "cavab.zip";
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .contentType(MediaType.parseMediaType("application/zip"))
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @PostMapping("/session/{sessionId}/score")
     public ResponseEntity<?> setScore(
             @PathVariable Long sessionId,
@@ -67,24 +91,5 @@ public class ResultsController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-    }
-    @GetMapping("/answer/{answerId}/download")
-    public ResponseEntity<Resource> downloadAnswer(@PathVariable Long answerId) {
-        StudentAnswer answer = answerRepository.findById(answerId)
-                .orElseThrow(() -> new RuntimeException("Cavab tapılmadı"));
-
-        if (answer.getAttachedFilePath() == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        File file = new File(answer.getAttachedFilePath());
-        if (!file.exists()) return ResponseEntity.notFound().build();
-
-        Resource resource = new FileSystemResource(file);
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + answer.getOriginalFileName() + "\"")
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(resource);
     }
 }

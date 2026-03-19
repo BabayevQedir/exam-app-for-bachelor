@@ -75,7 +75,7 @@ public class SecurityConfig {
 
                         // Müəllim + Admin
                         .requestMatchers("/api/exam/**").hasAnyRole("TEACHER", "ADMIN")
-                        .requestMatchers("/api/tickets/**").hasAnyRole("TEACHER", "ADMIN")
+                        .requestMatchers("/api/tickets/**").hasAnyRole("TEACHER", "ADMIN", "INVIGILATOR")
                         .requestMatchers("/api/results/**").hasAnyRole("TEACHER", "ADMIN")
 
                         .anyRequest().authenticated()
