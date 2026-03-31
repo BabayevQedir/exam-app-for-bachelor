@@ -68,7 +68,8 @@ public class SecurityConfig {
                         .requestMatchers("/", "/*.html", "/static/**", "/files/**").permitAll()
 
                         // Nəzarətçi + Müəllim
-                        .requestMatchers("/api/qr/**").hasAnyRole("INVIGILATOR", "TEACHER", "ADMIN")
+                        .requestMatchers("/api/qr/scan").permitAll()
+                        .requestMatchers("/api/qr/**").hasAnyRole("INVIGILATOR", "ADMIN")
 
                         // Yalnız Admin — tələbə kimliyini görür
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

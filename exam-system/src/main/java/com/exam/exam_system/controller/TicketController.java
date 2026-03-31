@@ -126,30 +126,8 @@ public class TicketController {
 
     // QR oxuma — nəzarətçi
     @GetMapping("/api/qr/scan")
-    public ResponseEntity<?> scanQrCode(@RequestParam("token") String token) {
-        Optional<Student> studentOpt = studentRepository.findByQrToken(token);
-        if (studentOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "QR kod tanınmadı"));
-        }
-        Student student = studentOpt.get();
-        Optional<Ticket> ticketOpt = ticketRepository.findByQrToken(token);
-
-        if (ticketOpt.isEmpty()) {
-            return ResponseEntity.ok(Map.of(
-                    "studentName", student.getFullName(),
-                    "groupName", student.getGroupName(),
-                    "message", "Bilet hələ yaradılmayıb"
-            ));
-        }
-
-        Ticket ticket = ticketOpt.get();
-        return ResponseEntity.ok(Map.of(
-                "studentName", student.getFullName(),
-                "groupName", student.getGroupName(),
-                "ticketNumber", ticket.getTicketNumber(),
-                "totalPoints", ticket.getTotalPoints(),
-                "durationMinutes", ticket.getExam().getDurationMinutes(),
-                "message", "✅ Bu bileti həmin tələbəyə verin"
-        ));
+    public void scanQrCode(@RequestParam("token") String token,
+                           jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
+        response.sendRedirect("/invigilator.html?token=" + token);
     }
 }
